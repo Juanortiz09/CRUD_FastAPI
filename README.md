@@ -131,3 +131,24 @@ curl -s -X DELETE http://127.0.0.1:8000/personas/1 -i
 
 - Si lo iniciaste en la misma terminal: usa `CTRL+C`.
 - Si corre en background, puedes cerrar esa terminal o matar el proceso de uvicorn (`pkill -f uvicorn`).
+
+
+## Funcionalidades adicionales del laboratorio
+
+### Desarrollo de Juan Pablo Ortiz
+1. **POST `/personas/poblar`**: genera personas aleatorias utilizando Faker. Valida que la cantidad esté entre 1 y 1000.
+2. **DELETE `/personas/reset`**: elimina todos los registros de la tabla personas e informa cuántos fueron eliminados.
+3. **GET `/personas/estadisticas/dominios`**: consulta la cantidad de personas agrupadas por el dominio de su correo electrónico.
+
+### Desarrollo de Jhon Alex Rivera
+4. **GET `/personas/estadisticas/edad`**: consulta la edad promedio, mínima y máxima de las personas.
+5. **GET `/personas/buscar/{termino}`**: permite buscar personas por nombre, apellido o correo electrónico.
+6. **GET `/personas/reporte/activos`**: genera un reporte con las personas que se encuentran activas.
+
+### Desarrollo de Emanuel Alzate
+7. **GET `/personas/cumpleanios/mes/{numero_mes}`**: consulta las personas que cumplen años en un mes determinado.
+8. **PATCH `/personas/bulk/desactivar`**: permite desactivar varias personas mediante sus identificadores.
+9. **GET `/personas/exportar/csv`**: permite exportar los registros de personas a un archivo CSV.
+
+### Dependencias adicionales
+Se agregó la librería Faker al archivo `requirements.txt` para permitir la generación automática de datos de prueba.
