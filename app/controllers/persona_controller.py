@@ -1,12 +1,34 @@
 from typing import List
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, status, HTTPException
 from sqlalchemy.orm import Session
+from pydantic import BaseModel, Field
 
 from ..database import get_db
 from ..views.persona import PersonaCreate, PersonaUpdate, PersonaRead
 from ..services import persona_service
 
 router = APIRouter(prefix="/personas", tags=["personas"])
+class PoblarRequest(BaseModel):
+    cantidad: int
+
+
+@router.post("/poblar", status_code=status.HTTP_201_CREATED)
+def poblar_personas_endpoint(
+    datos: PoblarRequest,
+    db: Session = Depends(get_db)
+):
+    if datos.cantidad < 1 or datos.cantidad > 1000:
+        raise HTTPException(
+            status_code=400,
+            detail="La cantidad debe estar entre 1 y 1000"
+        )
+
+    cantidad_creada = persona_service.poblar_personas(db, datos.cantidad)
+
+    return {
+        "mensaje": "Personas creadas correctamente",
+        "cantidad_creada": cantidad_creada
+    }
 
 
 @router.post("", response_model=PersonaRead, status_code=status.HTTP_201_CREATED)
@@ -25,7 +47,17 @@ def list_personas(
     """List Personas with pagination via service layer."""
     return persona_service.list_personas(db, skip=skip, limit=limit)
 
+@router.delete("/reset")
+def reset_personas_endpoint(db: Session = Depends(get_db)):
+    cantidad_eliminada = persona_service.reset_personas(db)
 
+    return {
+        "mensaje": "Personas eliminadas correctamente",
+        "deleted_count": cantidad_eliminada
+    }
+@router.get("/estadisticas/dominios")
+def estadisticas_dominios_endpoint(db: Session = Depends(get_db)):
+    return persona_service.estadisticas_dominios(db)
 @router.get("/{persona_id}", response_model=PersonaRead)
 def get_persona(persona_id: int, db: Session = Depends(get_db)):
     """Retrieve a Persona by ID via service layer."""
