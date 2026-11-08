@@ -1,11 +1,16 @@
 from typing import Sequence
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
 from ..models.persona import Persona
 from ..views.persona import PersonaCreate, PersonaUpdate
 from .errors import PersonaNotFoundError, EmailAlreadyExistsError
 
+import random
+import re
+import unicodedata
+from faker import Faker
 
 def create_persona(db: Session, payload: PersonaCreate) -> Persona:
     """Create a Persona ensuring unique email."""
@@ -76,3 +81,87 @@ def delete_persona(db: Session, persona_id: int) -> None:
         raise PersonaNotFoundError()
     db.delete(obj)
     db.commit()
+
+def poblar_personas(db: Session, cantidad: int) -> int:
+    """Generar personas aleatorias usando Faker."""
+
+    fake = Faker("es_CO")
+    dominios = ["gmail.com", "outlook.com", "hotmail.com", "yahoo.com"]
+
+    correos_existentes = {
+        correo.lower()
+        for (correo,) in db.query(Persona.email).all()
+    }
+
+    personas = []
+
+    for _ in range(cantidad):
+        first_name = fake.first_name()
+        last_name = fake.last_name()
+
+        nombre = unicodedata.normalize("NFKD", first_name)
+        nombre = "".join(c for c in nombre if not unicodedata.combining(c))
+        nombre = re.sub(r"[^a-zA-Z0-9]", "", nombre).lower()
+
+        apellido = unicodedata.normalize("NFKD", last_name)
+        apellido = "".join(c for c in apellido if not unicodedata.combining(c))
+        apellido = re.sub(r"[^a-zA-Z0-9]", "", apellido).lower()
+
+        dominio = random.choice(dominios)
+        correo_base = f"{nombre}.{apellido}"
+        email = f"{correo_base}@{dominio}"
+
+        consecutivo = 1
+        while email in correos_existentes:
+            email = f"{correo_base}{consecutivo}@{dominio}"
+            consecutivo += 1
+
+        correos_existentes.add(email)
+
+        persona = Persona(
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            phone=fake.numerify(text="3#########"),
+            birth_date=fake.date_of_birth(minimum_age=18, maximum_age=85),
+            is_active=fake.boolean(),
+            notes=fake.sentence(nb_words=6) if random.choice([True, False]) else None,
+        )
+
+        personas.append(persona)
+
+    db.add_all(personas)
+    db.commit()
+
+    return len(personas)
+
+def reset_personas(db: Session) -> int:
+    """Eliminar todas las personas de la base de datos."""
+
+    cantidad_eliminada = db.query(Persona).count()
+
+    db.query(Persona).delete(synchronize_session=False)
+
+    db.commit()
+
+    return cantidad_eliminada
+
+def estadisticas_dominios(db: Session):
+    """Contar cuántas personas hay por dominio de correo."""
+
+    resultados = (
+        db.query(
+            func.substring_index(Persona.email, "@", -1).label("dominio"),
+            func.count(Persona.id).label("cantidad")
+        )
+        .group_by(func.substring_index(Persona.email, "@", -1))
+        .all()
+    )
+
+    return [
+        {
+            "dominio": resultado.dominio,
+            "cantidad": resultado.cantidad
+        }
+        for resultado in resultados
+    ]
