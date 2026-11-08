@@ -43,3 +43,48 @@ def delete_persona(persona_id: int, db: Session = Depends(get_db)):
     """Delete a Persona by ID via service layer."""
     persona_service.delete_persona(db, persona_id)
     return None
+
+from sqlalchemy import func, or_
+
+# 4. Estadísticas de edad
+@router.get("/personas/estadisticas/edad")
+def obtener_estadisticas_edad(db: Session = Depends(get_db)):
+    edad_expr = func.timestampdiff(func.text('YEAR'), Persona.birth_date, func.curdate())
+    stats = db.query(
+        func.round(func.avg(edad_expr), 1).label("edad_promedio"),
+        func.min(edad_expr).label("edad_minima"),
+        func.max(edad_expr).label("edad_maxima")
+    ).first()
+    return {
+        "edad_promedio": float(stats.edad_promedio or 0),
+        "edad_minima": int(stats.edad_minima or 0),
+        "edad_maxima": int(stats.edad_maxima or 0)
+    }
+
+# 5. Buscador general
+@router.get("/personas/buscar/{termino}")
+def buscar_personas(termino: str, db: Session = Depends(get_db)):
+    busqueda = f"%{termino}%"
+    resultados = db.query(Persona).filter(
+        or_(
+            Persona.first_name.ilike(busqueda),
+            Persona.last_name.ilike(busqueda),
+            Persona.email.ilike(busqueda)
+        )
+    ).all()
+    return resultados
+
+# 6. Reporte de activos
+@router.get("/personas/reporte/activos")
+def reporte_activos(db: Session = Depends(get_db)):
+    personas_activas = db.query(Persona).filter(Persona.is_active == True).all()
+    reporte = [
+        {
+            "id": p.id,
+            "email": p.email,
+            "phone": p.phone,
+            "is_active": p.is_active
+        }
+        for p in personas_activas
+    ]
+    return reporte
