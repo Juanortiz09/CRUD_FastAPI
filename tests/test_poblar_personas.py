@@ -150,3 +150,17 @@ def test_estadisticas_dominios_sin_personas(client):
 
     assert respuesta.status_code == 200
     assert respuesta.json() == []
+
+def test_poblar_rechaza_cantidad_faltante(client):
+    respuesta = client.post("/personas/poblar", json={})
+
+    assert respuesta.status_code == 422
+
+
+def test_poblar_rechaza_cantidad_no_numerica(client):
+    respuesta = client.post(
+        "/personas/poblar",
+        json={"cantidad": "muchas"}
+    )
+
+    assert respuesta.status_code == 422
