@@ -1,0 +1,13 @@
+# Use this workspace to collaborate
+workspace:
+  id: 64c8dd08-f3f4-4c0d-83d8-cfaee26f1f32
+
+localResources:
+  collections:
+    - ../FastAPI Persona CRUD (MySQL)
+
+# Each entry here maps a local resource to one or more corresponding objects in Postman Cloud
+
+cloudResources:
+  collections:
+    ../FastAPI Persona CRUD (MySQL): 7d4b4d3a-8bf0-4a05-91b1-42f8f3e3f1d1
