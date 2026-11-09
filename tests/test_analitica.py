@@ -147,3 +147,32 @@ def test_h_desactivar_varias_personas(client):
     assert respuesta.status_code == 200
     assert respuesta.json()["total_desactivados"] == 2
     assert respuesta.json()["no_encontrados"] == []
+def test_g_cumpleanios_en_enero(client):
+    respuesta = crear_persona(
+        client, "enero@example.com", "1995-01-15"
+    )
+    assert respuesta.status_code == 201
+
+    respuesta = client.get("/personas/cumpleanios/mes/1")
+
+    assert respuesta.status_code == 200
+    assert len(respuesta.json()) == 1
+
+
+def test_g_cumpleanios_en_diciembre(client):
+    respuesta = crear_persona(
+        client, "diciembre@example.com", "1995-12-20"
+    )
+    assert respuesta.status_code == 201
+
+    respuesta = client.get("/personas/cumpleanios/mes/12")
+
+    assert respuesta.status_code == 200
+    assert len(respuesta.json()) == 1
+
+
+def test_g_mes_sin_cumpleanios(client):
+    respuesta = client.get("/personas/cumpleanios/mes/8")
+
+    assert respuesta.status_code == 200
+    assert respuesta.json() == []
