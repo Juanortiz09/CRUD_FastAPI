@@ -129,7 +129,7 @@ def delete_persona(persona_id: int, db: Session = Depends(get_db)):
 from sqlalchemy import func, or_
 
 # 4. Estadísticas de edad
-@router.get("/personas/estadisticas/edad")
+@router.get("/estadisticas/edad")
 def obtener_estadisticas_edad(db: Session = Depends(get_db)):
     edad_expr = func.timestampdiff(func.text('YEAR'), Persona.birth_date, func.curdate())
     stats = db.query(
@@ -144,7 +144,7 @@ def obtener_estadisticas_edad(db: Session = Depends(get_db)):
     }
 
 # 5. Buscador general
-@router.get("/personas/buscar/{termino}")
+@router.get("/buscar/{termino}")
 def buscar_personas(termino: str, db: Session = Depends(get_db)):
     busqueda = f"%{termino}%"
     resultados = db.query(Persona).filter(
@@ -157,7 +157,7 @@ def buscar_personas(termino: str, db: Session = Depends(get_db)):
     return resultados
 
 # 6. Reporte de activos
-@router.get("/personas/reporte/activos")
+@router.get("/reporte/activos")
 def reporte_activos(db: Session = Depends(get_db)):
     personas_activas = db.query(Persona).filter(Persona.is_active == True).all()
     reporte = [
