@@ -111,3 +111,39 @@ def test_i_exportar_csv(client):
     assert "text/csv" in respuesta.headers["content-type"]
     assert "ana.csv@example.com" in respuesta.text
     assert "first_name" in respuesta.text
+def test_h_rechaza_ids_no_positivos(client):
+    respuesta = client.patch(
+        "/personas/bulk/desactivar",
+        json={"ids": [0, -1]},
+    )
+
+    assert respuesta.status_code == 400
+
+
+def test_h_rechaza_mas_de_100_ids(client):
+    respuesta = client.patch(
+        "/personas/bulk/desactivar",
+        json={"ids": list(range(1, 102))},
+    )
+
+    assert respuesta.status_code == 400
+
+
+def test_h_desactivar_varias_personas(client):
+    persona1 = crear_persona(client, "ana1.bulk@example.com")
+    persona2 = crear_persona(client, "ana2.bulk@example.com")
+
+    assert persona1.status_code == 201
+    assert persona2.status_code == 201
+
+    id1 = persona1.json()["id"]
+    id2 = persona2.json()["id"]
+
+    respuesta = client.patch(
+        "/personas/bulk/desactivar",
+        json={"ids": [id1, id2]},
+    )
+
+    assert respuesta.status_code == 200
+    assert respuesta.json()["total_desactivados"] == 2
+    assert respuesta.json()["no_encontrados"] == []
