@@ -152,3 +152,36 @@ curl -s -X DELETE http://127.0.0.1:8000/personas/1 -i
 
 ### Dependencias adicionales
 Se agregó la librería Faker al archivo `requirements.txt` para permitir la generación automática de datos de prueba.
+ 
+
+## Pruebas automatizadas
+
+El proyecto incluye pruebas automatizadas para verificar el funcionamiento de los endpoints de analítica G, H e I.
+
+### Tecnologías utilizadas
+- **Pytest:** ejecución de pruebas automatizadas.
+- **HTTPX:** cliente para realizar solicitudes HTTP.
+- **SQLite:** base de datos independiente utilizada durante las pruebas.
+
+### Ejecutar las pruebas
+
+Desde la raíz del proyecto, activa el entorno virtual e instala las dependencias:
+
+```bash
+pip install -r requirements.txt
+```
+
+Ejecuta todas las pruebas con:
+
+```bash
+python -m pytest tests/test_analitica.py -v
+```
+
+### Cobertura de pruebas
+
+- **Endpoint G:** consulta de cumpleaños por mes, validación de meses y resultados vacíos.
+- **Endpoint H:** desactivación masiva, validación de identificadores, IDs duplicados y verificación del estado de las personas.
+- **Endpoint I:** exportación CSV, encabezados, nombre del archivo y límite de 1000 registros.
+
+Las pruebas utilizan una base de datos SQLite independiente para evitar modificar los datos de MySQL.
+
