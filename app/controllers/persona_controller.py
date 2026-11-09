@@ -8,6 +8,7 @@ import io
 from ..database import get_db
 from ..views.persona import PersonaCreate, PersonaUpdate, PersonaRead
 from ..services import persona_service
+from ..models.persona import Persona
 
 router = APIRouter(prefix="/personas", tags=["personas"])
 
@@ -126,12 +127,12 @@ def delete_persona(persona_id: int, db: Session = Depends(get_db)):
     persona_service.delete_persona(db, persona_id)
     return None
 
-from sqlalchemy import func, or_
+from sqlalchemy import func, or_, text
 
 # 4. Estadísticas de edad
 @router.get("/estadisticas/edad")
 def obtener_estadisticas_edad(db: Session = Depends(get_db)):
-    edad_expr = func.timestampdiff(func.text('YEAR'), Persona.birth_date, func.curdate())
+    edad_expr = func.timestampdiff(text("YEAR"), Persona.birth_date, func.curdate())
     stats = db.query(
         func.round(func.avg(edad_expr), 1).label("edad_promedio"),
         func.min(edad_expr).label("edad_minima"),
