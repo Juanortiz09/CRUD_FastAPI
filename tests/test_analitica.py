@@ -176,3 +176,35 @@ def test_g_mes_sin_cumpleanios(client):
 
     assert respuesta.status_code == 200
     assert respuesta.json() == []
+def test_i_exportar_csv_tiene_encabezados_y_nombre(client):
+    respuesta = client.get("/personas/exportar/csv")
+
+    assert respuesta.status_code == 200
+    assert "attachment; filename=personas.csv" in (
+        respuesta.headers["content-disposition"]
+    )
+
+    encabezados = respuesta.text.splitlines()[0]
+
+    columnas_esperadas = [
+        "id",
+        "first_name",
+        "last_name",
+        "email",
+        "phone",
+        "birth_date",
+        "is_active",
+        "notes",
+        "created_at",
+    ]
+
+    for columna in columnas_esperadas:
+        assert columna in encabezados
+
+
+def test_i_exportar_csv_sin_registros(client):
+    respuesta = client.get("/personas/exportar/csv")
+
+    assert respuesta.status_code == 200
+    assert "text/csv" in respuesta.headers["content-type"]
+    assert "first_name" in respuesta.text
