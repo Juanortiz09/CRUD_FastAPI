@@ -227,3 +227,22 @@ def test_h_verifica_estado_despues_de_desactivar(client):
 
     assert consulta.status_code == 200
     assert consulta.json()["is_active"] is False
+def test_i_exportar_csv_limita_a_1000_registros(client, monkeypatch):
+    from app.controllers import persona_controller
+
+    parametros = {}
+
+    def listar_personas_falso(db, skip=0, limit=100):
+        parametros["limit"] = limit
+        return []
+
+    monkeypatch.setattr(
+        persona_controller.persona_service,
+        "list_personas",
+        listar_personas_falso,
+    )
+
+    respuesta = client.get("/personas/exportar/csv")
+
+    assert respuesta.status_code == 200
+    assert parametros["limit"] == 1000
