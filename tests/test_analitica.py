@@ -208,3 +208,22 @@ def test_i_exportar_csv_sin_registros(client):
     assert respuesta.status_code == 200
     assert "text/csv" in respuesta.headers["content-type"]
     assert "first_name" in respuesta.text
+def test_h_verifica_estado_despues_de_desactivar(client):
+    persona = crear_persona(
+        client, "verificar.estado@example.com"
+    )
+    assert persona.status_code == 201
+
+    persona_id = persona.json()["id"]
+
+    respuesta = client.patch(
+        "/personas/bulk/desactivar",
+        json={"ids": [persona_id]},
+    )
+
+    assert respuesta.status_code == 200
+
+    consulta = client.get(f"/personas/{persona_id}")
+
+    assert consulta.status_code == 200
+    assert consulta.json()["is_active"] is False
