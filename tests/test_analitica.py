@@ -246,3 +246,19 @@ def test_i_exportar_csv_limita_a_1000_registros(client, monkeypatch):
 
     assert respuesta.status_code == 200
     assert parametros["limit"] == 1000
+def test_h_no_duplica_personas_con_ids_repetidos(client):
+    persona = crear_persona(
+        client, "duplicado@example.com"
+    )
+    assert persona.status_code == 201
+
+    persona_id = persona.json()["id"]
+
+    respuesta = client.patch(
+        "/personas/bulk/desactivar",
+        json={"ids": [persona_id, persona_id]},
+    )
+
+    assert respuesta.status_code == 200
+    assert respuesta.json()["total_desactivados"] == 1
+    assert respuesta.json()["desactivados"] == [persona_id]
