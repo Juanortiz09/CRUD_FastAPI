@@ -1,6 +1,6 @@
 from typing import Sequence
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, extract
 from sqlalchemy.exc import IntegrityError
 
 from ..models.persona import Persona
@@ -170,9 +170,11 @@ def cumpleanios_por_mes(db: Session, numero_mes: int):
 
     resultados = (
         db.query(Persona)
-        .filter(func.month(Persona.birth_date) == numero_mes)
+        .filter(extract("month", Persona.birth_date) == numero_mes)
         .all()
     )
+
+    return resultados
 
     return resultados
 def desactivar_personas_masivo(db: Session, ids: list[int]):
