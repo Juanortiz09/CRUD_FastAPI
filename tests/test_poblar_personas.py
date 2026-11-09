@@ -91,3 +91,28 @@ def test_poblar_no_genera_correos_duplicados(client):
 
     assert len(correos) == 30
     assert len(correos) == len(set(correos))
+
+def test_reset_elimina_todas_las_personas(client):
+    client.post(
+        "/personas",
+        json={
+            "first_name": "Ana",
+            "last_name": "Prueba",
+            "email": "ana.reset@example.com",
+            "phone": "3001234567",
+            "birth_date": "1995-05-10",
+            "is_active": True,
+        },
+    )
+
+    respuesta = client.delete("/personas/reset")
+
+    assert respuesta.status_code == 200
+    assert respuesta.json()["deleted_count"] == 1
+
+
+def test_reset_sin_personas(client):
+    respuesta = client.delete("/personas/reset")
+
+    assert respuesta.status_code == 200
+    assert respuesta.json()["deleted_count"] == 0
