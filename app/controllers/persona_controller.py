@@ -48,6 +48,10 @@ def desactivar_personas_masivo_endpoint(
     datos: DesactivarMasivoRequest,
     db: Session = Depends(get_db)
 ):
+    """
+    Desactiva varias personas mediante una lista de IDs.
+    Valida que los IDs sean positivos y que no superen 100 registros.
+    """
     if not datos.ids:
         raise HTTPException(
             status_code=400,
@@ -94,6 +98,10 @@ def cumpleanios_por_mes(
     numero_mes: int,
     db: Session = Depends(get_db)
 ):
+    """
+    Consulta las personas que cumplen años en un mes específico.
+    Valida que el mes esté entre 1 y 12.
+    """
     if numero_mes < 1 or numero_mes > 12:
         raise HTTPException(
             status_code=400,
@@ -164,12 +172,15 @@ def reporte_activos(db: Session = Depends(get_db)):
     return reporte
 @router.get("/exportar/csv")
 def exportar_personas_csv(db: Session = Depends(get_db)):
+    """
+    Exporta los registros de personas en formato CSV.
+    Incluye los datos principales de cada persona.
+    """
     personas = persona_service.list_personas(
         db,
         skip=0,
         limit=1000
     )
-
     output = io.StringIO()
     writer = csv.writer(output)
 
