@@ -155,6 +155,7 @@ def estadisticas_dominios(db: Session):
             func.count(Persona.id).label("cantidad")
         )
         .group_by(func.substring_index(Persona.email, "@", -1))
+        .order_by(func.count(Persona.id).desc())
         .all()
     )
 
