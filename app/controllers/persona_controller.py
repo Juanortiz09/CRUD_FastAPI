@@ -2,15 +2,22 @@ from typing import List
 from fastapi import APIRouter, Depends, Query, status, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
-
+from fastapi.responses import StreamingResponse
+import csv
+import io
 from ..database import get_db
 from ..views.persona import PersonaCreate, PersonaUpdate, PersonaRead
 from ..services import persona_service
 
 router = APIRouter(prefix="/personas", tags=["personas"])
+
+
 class PoblarRequest(BaseModel):
     cantidad: int
 
+
+class DesactivarMasivoRequest(BaseModel):
+    ids: list[int]
 
 @router.post("/poblar", status_code=status.HTTP_201_CREATED)
 def poblar_personas_endpoint(
@@ -36,8 +43,36 @@ def create_persona(persona_in: PersonaCreate, db: Session = Depends(get_db)):
     """Create a new Persona delegating to service layer."""
     # Let domain errors bubble up to global handlers
     return persona_service.create_persona(db, persona_in)
+@router.patch("/bulk/desactivar")
+def desactivar_personas_masivo_endpoint(
+    datos: DesactivarMasivoRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Desactiva varias personas mediante una lista de IDs.
+    Valida que los IDs sean positivos y que no superen 100 registros.
+    """
+    if not datos.ids:
+        raise HTTPException(
+            status_code=400,
+            detail="Debe enviar al menos un ID."
+        )
 
+    if len(datos.ids) > 100:
+        raise HTTPException(
+            status_code=400,
+            detail="No puede enviar más de 100 IDs."
+        )
 
+    if any(persona_id <= 0 for persona_id in datos.ids):
+        raise HTTPException(
+            status_code=400,
+            detail="Los IDs deben ser positivos."
+        )
+
+    return persona_service.desactivar_personas_masivo(
+        db, datos.ids
+    )
 @router.get("", response_model=List[PersonaRead])
 def list_personas(
     skip: int = Query(0, ge=0),
@@ -58,6 +93,21 @@ def reset_personas_endpoint(db: Session = Depends(get_db)):
 @router.get("/estadisticas/dominios")
 def estadisticas_dominios_endpoint(db: Session = Depends(get_db)):
     return persona_service.estadisticas_dominios(db)
+@router.get("/cumpleanios/mes/{numero_mes}")
+def cumpleanios_por_mes(
+    numero_mes: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Consulta las personas que cumplen años en un mes específico.
+    Valida que el mes esté entre 1 y 12.
+    """
+    if numero_mes < 1 or numero_mes > 12:
+        raise HTTPException(
+            status_code=400,
+            detail="El mes debe ser un entero entre 1 y 12."
+        )
+    return persona_service.cumpleanios_por_mes(db, numero_mes)
 @router.get("/{persona_id}", response_model=PersonaRead)
 def get_persona(persona_id: int, db: Session = Depends(get_db)):
     """Retrieve a Persona by ID via service layer."""
@@ -120,3 +170,51 @@ def reporte_activos(db: Session = Depends(get_db)):
         for p in personas_activas
     ]
     return reporte
+@router.get("/exportar/csv")
+def exportar_personas_csv(db: Session = Depends(get_db)):
+    """
+    Exporta los registros de personas en formato CSV.
+    Incluye los datos principales de cada persona.
+    """
+    personas = persona_service.list_personas(
+        db,
+        skip=0,
+        limit=1000
+    )
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    writer.writerow([
+        "id",
+        "first_name",
+        "last_name",
+        "email",
+        "phone",
+        "birth_date",
+        "is_active",
+        "notes",
+        "created_at"
+    ])
+
+    for persona in personas:
+        writer.writerow([
+            persona.id,
+            persona.first_name,
+            persona.last_name,
+            persona.email,
+            persona.phone,
+            persona.birth_date,
+            persona.is_active,
+            persona.notes,
+            persona.created_at
+        ])
+
+    output.seek(0)
+
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": "attachment; filename=personas.csv"
+        }
+    )

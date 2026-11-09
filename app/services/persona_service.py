@@ -1,6 +1,6 @@
 from typing import Sequence
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, extract
 from sqlalchemy.exc import IntegrityError
 
 from ..models.persona import Persona
@@ -165,3 +165,40 @@ def estadisticas_dominios(db: Session):
         }
         for resultado in resultados
     ]
+def cumpleanios_por_mes(db: Session, numero_mes: int):
+    """Retornar personas que cumplen años en el mes indicado."""
+
+    resultados = (
+        db.query(Persona)
+        .filter(extract("month", Persona.birth_date) == numero_mes)
+        .all()
+    )
+
+    return resultados
+
+    return resultados
+def desactivar_personas_masivo(db: Session, ids: list[int]):
+    """Desactivar varias personas mediante sus IDs."""
+
+    personas = (
+        db.query(Persona)
+        .filter(Persona.id.in_(ids))
+        .all()
+    )
+
+    ids_encontrados = [persona.id for persona in personas]
+    ids_no_encontrados = [
+        persona_id for persona_id in ids
+        if persona_id not in ids_encontrados
+    ]
+
+    for persona in personas:
+        persona.is_active = False
+
+    db.commit()
+
+    return {
+        "desactivados": ids_encontrados,
+        "no_encontrados": ids_no_encontrados,
+        "total_desactivados": len(ids_encontrados)
+    }
