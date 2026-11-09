@@ -147,7 +147,30 @@ def reset_personas(db: Session) -> int:
     return cantidad_eliminada
 
 def estadisticas_dominios(db: Session):
-    """Contar cuántas personas hay por dominio de correo."""
+    """Contar personas por dominio de correo."""
+
+    dominio = func.substr(
+        Persona.email,
+        func.instr(Persona.email, "@") + 1
+    )
+
+    resultados = (
+        db.query(
+            dominio.label("dominio"),
+            func.count(Persona.id).label("cantidad")
+        )
+        .group_by(dominio)
+        .order_by(func.count(Persona.id).desc())
+        .all()
+    )
+
+    return [
+        {
+            "dominio": resultado.dominio,
+            "cantidad": resultado.cantidad
+        }
+        for resultado in resultados
+    ]
 
     resultados = (
         db.query(
