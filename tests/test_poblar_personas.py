@@ -116,3 +116,37 @@ def test_reset_sin_personas(client):
 
     assert respuesta.status_code == 200
     assert respuesta.json()["deleted_count"] == 0
+
+def test_estadisticas_dominios_cuenta_correctamente(client):
+    correos = [
+        "ana@gmail.com",
+        "juan@gmail.com",
+        "pedro@hotmail.com",
+    ]
+
+    for i, correo in enumerate(correos):
+        client.post(
+            "/personas",
+            json={
+                "first_name": f"Persona{i}",
+                "last_name": "Prueba",
+                "email": correo,
+                "phone": f"300123456{i}",
+                "birth_date": "1995-05-10",
+                "is_active": True,
+            },
+        )
+
+    respuesta = client.get("/personas/estadisticas/dominios")
+
+    assert respuesta.status_code == 200
+    datos = {item["dominio"]: item["cantidad"] for item in respuesta.json()}
+    assert datos["gmail.com"] == 2
+    assert datos["hotmail.com"] == 1
+
+
+def test_estadisticas_dominios_sin_personas(client):
+    respuesta = client.get("/personas/estadisticas/dominios")
+
+    assert respuesta.status_code == 200
+    assert respuesta.json() == []
